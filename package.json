@@ -1,0 +1,31 @@
+{
+  "name": "murgi",
+  "appName": "Murgi Live",
+  "version": "1.0.2",
+  "description": "Murgi Live TV module for TizenBrew",
+  "packageType": "mods",
+  "websiteURL": "http://murgi.live/live-tv.html",
+  "main": "index.js",
+  "author": "Sazin31",
+  "keys": [
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "Enter",
+    "Back",
+    "MediaPlayPause",
+    "MediaPlay",
+    "MediaPause",
+    "MediaStop",
+    "MediaFastForward",
+    "MediaRewind",
+    "MediaTrackNext",
+    "MediaTrackPrevious"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sazin31/murgi"
+  },
+  "license": "MIT"
+}
