@@ -1,3 +1,5 @@
+console.log("SCRIPT STARTED");
+alert("SCRIPT LOADED");
 (function () {
   "use strict";
 
