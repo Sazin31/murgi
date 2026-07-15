@@ -1,39 +1,62 @@
 (function () {
-  console.log("✅ Murgi Live TizenBrew module loaded");
+  "use strict";
+
+  console.log("✅ Murgi Live TV cursor module loaded");
 
   var cursorX = Math.floor(window.innerWidth / 2);
   var cursorY = Math.floor(window.innerHeight / 2);
-  var step = 45;
 
+  var step = 45;
   var cursorId = "murgi-tv-cursor";
   var debugId = "murgi-tv-debug";
   var styleId = "murgi-tv-style";
+
+  var lastEnterTime = 0;
+  var initialized = false;
 
   function getRoot() {
     return document.body || document.documentElement;
   }
 
+  /* -------------------------------------------------------
+     CSS
+  ------------------------------------------------------- */
+
   function addStyle() {
-    if (document.getElementById(styleId)) return;
+    if (document.getElementById(styleId)) {
+      return;
+    }
 
     var style = document.createElement("style");
     style.id = styleId;
 
-    style.innerHTML =
+    style.textContent =
       "#murgi-tv-cursor {" +
       "position: fixed !important;" +
-      "left: 50% !important;" +
-      "top: 50% !important;" +
-      "width: 34px !important;" +
-      "height: 34px !important;" +
-      "border-radius: 50% !important;" +
-      "background: #00ff66 !important;" +
-      "border: 5px solid #ffffff !important;" +
-      "box-shadow: 0 0 25px #00ff66 !important;" +
+      "left: 0 !important;" +
+      "top: 0 !important;" +
+      "width: 48px !important;" +
+      "height: 48px !important;" +
       "z-index: 2147483647 !important;" +
-      "pointer-events: none !important;" +
-      "transform: translate(-50%, -50%) !important;" +
       "display: block !important;" +
+      "visibility: visible !important;" +
+      "opacity: 1 !important;" +
+      "pointer-events: none !important;" +
+      "margin: 0 !important;" +
+      "padding: 0 !important;" +
+      "border: 0 !important;" +
+      "background: transparent !important;" +
+      "transform: translate(-4px, -4px) !important;" +
+      "filter: none !important;" +
+      "overflow: visible !important;" +
+      "}" +
+
+      "#murgi-tv-cursor svg {" +
+      "display: block !important;" +
+      "width: 48px !important;" +
+      "height: 48px !important;" +
+      "overflow: visible !important;" +
+      "pointer-events: none !important;" +
       "}" +
 
       "#murgi-tv-debug {" +
@@ -41,23 +64,33 @@
       "left: 20px !important;" +
       "bottom: 20px !important;" +
       "z-index: 2147483646 !important;" +
-      "background: rgba(0,0,0,0.90) !important;" +
+      "display: block !important;" +
+      "visibility: visible !important;" +
+      "opacity: 1 !important;" +
+      "background: rgba(0, 0, 0, 0.90) !important;" +
       "color: #00ff66 !important;" +
       "padding: 10px 14px !important;" +
-      "font-size: 20px !important;" +
+      "font-size: 18px !important;" +
       "font-family: Arial, sans-serif !important;" +
+      "font-weight: bold !important;" +
       "border: 2px solid #00ff66 !important;" +
       "border-radius: 10px !important;" +
+      "box-shadow: 0 0 15px rgba(0, 255, 102, 0.5) !important;" +
       "pointer-events: none !important;" +
       "}" +
 
-      "*:focus {" +
-      "outline: 4px solid #00ff66 !important;" +
+      "a.murgi-hover, button.murgi-hover, " +
+      "[role='button'].murgi-hover {" +
+      "outline: 5px solid #00ff66 !important;" +
       "outline-offset: 4px !important;" +
       "}";
 
     document.documentElement.appendChild(style);
   }
+
+  /* -------------------------------------------------------
+     Debug box
+  ------------------------------------------------------- */
 
   function showDebug(text) {
     var debug = document.getElementById(debugId);
@@ -68,8 +101,12 @@
       getRoot().appendChild(debug);
     }
 
-    debug.innerText = text;
+    debug.textContent = text;
   }
+
+  /* -------------------------------------------------------
+     Cursor
+  ------------------------------------------------------- */
 
   function createCursor() {
     var cursor = document.getElementById(cursorId);
@@ -77,6 +114,29 @@
     if (!cursor) {
       cursor = document.createElement("div");
       cursor.id = cursorId;
+
+      /*
+       * White and green mouse-pointer SVG.
+       * The small red circle marks the actual click point.
+       */
+      cursor.innerHTML =
+        '<svg viewBox="0 0 48 48" ' +
+        'xmlns="http://www.w3.org/2000/svg">' +
+
+        '<path d="M5 3 L5 37 L14 29 L21 44 ' +
+        'L29 40 L22 26 L36 26 Z" ' +
+        'fill="#00ff66" ' +
+        'stroke="#ffffff" ' +
+        'stroke-width="3" ' +
+        'stroke-linejoin="round"/>' +
+
+        '<circle cx="5" cy="3" r="3.5" ' +
+        'fill="#ff3030" ' +
+        'stroke="#ffffff" ' +
+        'stroke-width="1.5"/>' +
+
+        "</svg>";
+
       getRoot().appendChild(cursor);
     }
 
@@ -85,33 +145,166 @@
 
   function updateCursor() {
     var cursor = document.getElementById(cursorId);
-    if (!cursor) return;
 
-    cursorX = Math.max(20, Math.min(window.innerWidth - 20, cursorX));
-    cursorY = Math.max(20, Math.min(window.innerHeight - 20, cursorY));
+    if (!cursor) {
+      return;
+    }
 
-    cursor.style.left = cursorX + "px";
-    cursor.style.top = cursorY + "px";
+    cursorX = Math.max(
+      5,
+      Math.min(window.innerWidth - 40, cursorX)
+    );
 
-    showDebug("Murgi loaded | X: " + cursorX + " Y: " + cursorY);
+    cursorY = Math.max(
+      5,
+      Math.min(window.innerHeight - 45, cursorY)
+    );
+
+    /*
+     * Important fix:
+     * Inline values are also marked important.
+     */
+    cursor.style.setProperty(
+      "left",
+      cursorX + "px",
+      "important"
+    );
+
+    cursor.style.setProperty(
+      "top",
+      cursorY + "px",
+      "important"
+    );
+
+    cursor.style.setProperty(
+      "display",
+      "block",
+      "important"
+    );
+
+    cursor.style.setProperty(
+      "visibility",
+      "visible",
+      "important"
+    );
+
+    updateHoveredElement();
+
+    showDebug(
+      "Murgi cursor | X: " +
+      cursorX +
+      " Y: " +
+      cursorY
+    );
   }
+
+  /* -------------------------------------------------------
+     Find element under cursor
+  ------------------------------------------------------- */
 
   function elementUnderCursor() {
     var cursor = document.getElementById(cursorId);
+    var element;
 
-    if (cursor) cursor.style.display = "none";
-    var el = document.elementFromPoint(cursorX, cursorY);
-    if (cursor) cursor.style.display = "block";
+    if (cursor) {
+      cursor.style.setProperty(
+        "display",
+        "none",
+        "important"
+      );
+    }
 
-    return el;
+    element = document.elementFromPoint(cursorX, cursorY);
+
+    if (cursor) {
+      cursor.style.setProperty(
+        "display",
+        "block",
+        "important"
+      );
+    }
+
+    return element;
   }
 
-  function dispatchMouse(el, type) {
-    if (!el) return;
+  function findClickableElement(element) {
+    var originalElement = element;
 
-    var ev = document.createEvent("MouseEvents");
+    while (
+      element &&
+      element !== document.body &&
+      element !== document.documentElement
+    ) {
+      var tag = element.tagName
+        ? element.tagName.toUpperCase()
+        : "";
 
-    ev.initMouseEvent(
+      var role = element.getAttribute
+        ? element.getAttribute("role")
+        : "";
+
+      if (
+        tag === "A" ||
+        tag === "BUTTON" ||
+        tag === "INPUT" ||
+        tag === "SELECT" ||
+        tag === "TEXTAREA" ||
+        tag === "VIDEO" ||
+        role === "button" ||
+        role === "link" ||
+        typeof element.onclick === "function" ||
+        element.tabIndex >= 0
+      ) {
+        return element;
+      }
+
+      element = element.parentElement;
+    }
+
+    return originalElement;
+  }
+
+  /* -------------------------------------------------------
+     Hover outline
+  ------------------------------------------------------- */
+
+  function clearHoverClasses() {
+    var hovered = document.querySelectorAll(".murgi-hover");
+    var i;
+
+    for (i = 0; i < hovered.length; i++) {
+      hovered[i].classList.remove("murgi-hover");
+    }
+  }
+
+  function updateHoveredElement() {
+    clearHoverClasses();
+
+    var element = elementUnderCursor();
+    var clickable = findClickableElement(element);
+
+    if (
+      clickable &&
+      clickable.classList &&
+      clickable !== document.body &&
+      clickable !== document.documentElement
+    ) {
+      clickable.classList.add("murgi-hover");
+    }
+  }
+
+  /* -------------------------------------------------------
+     Mouse events and clicking
+  ------------------------------------------------------- */
+
+  function dispatchMouseEvent(element, type) {
+    if (!element) {
+      return;
+    }
+
+    var event = document.createEvent("MouseEvents");
+
+    event.initMouseEvent(
       type,
       true,
       true,
@@ -129,46 +322,69 @@
       null
     );
 
-    el.dispatchEvent(ev);
+    element.dispatchEvent(event);
   }
 
   function clickAtCursor() {
-    var el = elementUnderCursor();
+    var element = elementUnderCursor();
+    var clickable;
 
-    if (!el) {
-      showDebug("No element under cursor");
+    if (!element) {
+      showDebug("Nothing found under cursor");
       return;
     }
 
-    showDebug("Clicked: " + el.tagName);
+    clickable = findClickableElement(element);
 
-    dispatchMouse(el, "mouseover");
-    dispatchMouse(el, "mousemove");
-    dispatchMouse(el, "mousedown");
-    dispatchMouse(el, "mouseup");
-    dispatchMouse(el, "click");
+    showDebug(
+      "Click: " +
+      clickable.tagName +
+      " | X: " +
+      cursorX +
+      " Y: " +
+      cursorY
+    );
 
     try {
-      if (typeof el.click === "function") {
-        el.click();
+      if (typeof clickable.focus === "function") {
+        clickable.focus();
       }
-    } catch (e) {}
+    } catch (error) {}
+
+    dispatchMouseEvent(clickable, "mouseover");
+    dispatchMouseEvent(clickable, "mouseenter");
+    dispatchMouseEvent(clickable, "mousemove");
+    dispatchMouseEvent(clickable, "mousedown");
+    dispatchMouseEvent(clickable, "mouseup");
+    dispatchMouseEvent(clickable, "click");
   }
+
+  /* -------------------------------------------------------
+     Video control
+  ------------------------------------------------------- */
 
   function toggleVideo() {
     var video = document.querySelector("video");
 
     if (!video) {
-      showDebug("No video found");
+      showDebug("No video element found");
       return;
     }
 
     if (video.paused) {
-      video.play();
-      showDebug("Video play");
+      var playResult = video.play();
+
+      if (
+        playResult &&
+        typeof playResult.catch === "function"
+      ) {
+        playResult.catch(function () {});
+      }
+
+      showDebug("Video playing");
     } else {
       video.pause();
-      showDebug("Video pause");
+      showDebug("Video paused");
     }
   }
 
@@ -176,7 +392,7 @@
     var video = document.querySelector("video");
 
     if (!video) {
-      showDebug("No video found");
+      showDebug("No video element found");
       return;
     }
 
@@ -184,57 +400,83 @@
 
     try {
       video.currentTime = 0;
-    } catch (e) {}
+    } catch (error) {}
 
     showDebug("Video stopped");
   }
 
+  /* -------------------------------------------------------
+     Remote handling
+  ------------------------------------------------------- */
+
+  function blockOriginalEvent(event) {
+    if (event.preventDefault) {
+      event.preventDefault();
+    }
+
+    if (event.stopPropagation) {
+      event.stopPropagation();
+    }
+
+    if (event.stopImmediatePropagation) {
+      event.stopImmediatePropagation();
+    }
+  }
+
   function handleKey(event) {
-    var code = event.keyCode;
+    var code = event.keyCode || event.which;
     var key = event.key || "";
 
     if (code === 37 || key === "ArrowLeft") {
+      blockOriginalEvent(event);
       cursorX -= step;
-      event.preventDefault();
-      event.stopPropagation();
       updateCursor();
       return false;
     }
 
     if (code === 38 || key === "ArrowUp") {
+      blockOriginalEvent(event);
       cursorY -= step;
-      event.preventDefault();
-      event.stopPropagation();
       updateCursor();
       return false;
     }
 
     if (code === 39 || key === "ArrowRight") {
+      blockOriginalEvent(event);
       cursorX += step;
-      event.preventDefault();
-      event.stopPropagation();
       updateCursor();
       return false;
     }
 
     if (code === 40 || key === "ArrowDown") {
+      blockOriginalEvent(event);
       cursorY += step;
-      event.preventDefault();
-      event.stopPropagation();
       updateCursor();
       return false;
     }
 
     if (code === 13 || key === "Enter") {
-      event.preventDefault();
-      event.stopPropagation();
-      clickAtCursor();
+      blockOriginalEvent(event);
+
+      /*
+       * Stops one remote press from clicking repeatedly.
+       */
+      var currentTime = new Date().getTime();
+
+      if (currentTime - lastEnterTime > 350) {
+        lastEnterTime = currentTime;
+        clickAtCursor();
+      }
+
       return false;
     }
 
-    if (code === 10009 || key === "Back" || key === "Backspace") {
-      event.preventDefault();
-      event.stopPropagation();
+    if (
+      code === 10009 ||
+      key === "Back" ||
+      key === "Backspace"
+    ) {
+      blockOriginalEvent(event);
 
       if (window.history.length > 1) {
         window.history.back();
@@ -249,49 +491,86 @@
       key === "MediaPlayPause" ||
       key === "MediaPlay"
     ) {
-      event.preventDefault();
-      event.stopPropagation();
+      blockOriginalEvent(event);
       toggleVideo();
       return false;
     }
 
-    if (code === 19 || key === "MediaPause") {
-      event.preventDefault();
-      event.stopPropagation();
+    if (
+      code === 19 ||
+      key === "MediaPause"
+    ) {
+      blockOriginalEvent(event);
 
       var videoPause = document.querySelector("video");
-      if (videoPause) videoPause.pause();
 
-      showDebug("Video pause");
+      if (videoPause) {
+        videoPause.pause();
+      }
+
+      showDebug("Video paused");
       return false;
     }
 
-    if (code === 413 || key === "MediaStop") {
-      event.preventDefault();
-      event.stopPropagation();
+    if (
+      code === 413 ||
+      key === "MediaStop"
+    ) {
+      blockOriginalEvent(event);
       stopVideo();
       return false;
     }
   }
 
-  function init() {
+  /* -------------------------------------------------------
+     Initialize
+  ------------------------------------------------------- */
+
+  function initialize() {
+    if (initialized) {
+      return;
+    }
+
+    initialized = true;
+
     addStyle();
     createCursor();
-    showDebug("✅ Murgi Live module loaded");
 
-    document.addEventListener("keydown", handleKey, true);
+    showDebug(
+      "Murgi cursor ready | X: " +
+      cursorX +
+      " Y: " +
+      cursorY
+    );
+
+    /*
+     * Capture mode lets this code receive remote keys
+     * before most website handlers.
+     */
     window.addEventListener("keydown", handleKey, true);
 
+    /*
+     * Recreate cursor if the website is a SPA and replaces
+     * its body or removes injected elements.
+     */
     setInterval(function () {
       addStyle();
       createCursor();
+    }, 1500);
+
+    window.addEventListener("resize", function () {
+      cursorX = Math.min(cursorX, window.innerWidth - 40);
+      cursorY = Math.min(cursorY, window.innerHeight - 45);
       updateCursor();
-    }, 2000);
+    });
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener(
+      "DOMContentLoaded",
+      initialize
+    );
   } else {
-    init();
+    initialize();
   }
 })();
